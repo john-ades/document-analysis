@@ -1,0 +1,5 @@
+config/local
+.git
+.venv
+.DS_Store
+.idea

@@ -1,0 +1,9 @@
+Text extracted from a pdf file using the OCR engine Tesseract with configs load_system_dawg=0 load_freq_dawg=0. The Text might have errors with the OCR algorithm so account for correcting those errors based on the fact that this document has the context `{<<CONTEXT>>}`, also ignore any summary line items like `subtotal` or `total`:
+
+{<<DOCUMENT>>}
+
+-----------TEXT ENDS-----------
+Extract all line items from this pdf.
+
+| Line Item | Quantity | Price | Currency Code (ISO 4217) |
+|-----------|---------|-------|--------------------------|

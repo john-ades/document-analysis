@@ -1,0 +1,8 @@
+pydantic
+pytesseract
+Flask
+Pillow
+pdf2image
+requests
+openai
+iso4217
