@@ -1,4 +1,3 @@
-
 from flask import Blueprint, jsonify
 
 api_error_blueprint = Blueprint('error_blueprint', __name__)

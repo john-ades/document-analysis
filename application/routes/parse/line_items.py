@@ -2,37 +2,48 @@ import json
 
 from flask import Blueprint, request, jsonify
 
+from pydantic import BaseModel
+
 from application.errors import APIError
 from application.models.line_item import LineItem
 from application.models.price import Price
-from application.utils.documents.input_processor import document_input_processor
-from application.services.ocr import extract_text
 from application.services.llm import llm_completion
+from application.services.ocr import extract_text
 from application.static.prompts import \
     line_item_extraction_prompt, \
     line_item_extraction_w_context_prompt
+from application.utils.documents.input_processor import document_input_processor
 
 parse_line_items_api = Blueprint('parse_line_items', __name__)
 
 CONTEXT_CHARACTER_LIMIT = 400
 
+
 @parse_line_items_api.route('/parse/line_items', methods=["POST"])
 def parse_line_items():
-    images, data, error = document_input_processor(request)
+    documents, data, error = document_input_processor(request)
     if error:
         raise APIError(error)
-    if len(images) == 0:
+    if len(documents) == 0:
         raise APIError("Could not find any documents or images to process")
 
-    extract_texts = [extract_text(image) for image in images]
-
+    # get the input context
     context = data.get("context")
-    if context is not None and (not isinstance(context,str) or len(context.strip()) > CONTEXT_CHARACTER_LIMIT):
-        raise APIError(f"the `context` value must be a string and equal to or below {CONTEXT_CHARACTER_LIMIT} characters.")
+    if context is not None and (not isinstance(context, str) or len(context.strip()) > CONTEXT_CHARACTER_LIMIT):
+        raise APIError(
+            f"the `context` value must be a string and equal to or below {CONTEXT_CHARACTER_LIMIT} characters.")
+
+    # extract text using OCR
+    all_document_pages = []
+    for document in documents:
+        extracted_texts = [extract_text(page.image) for page in document.pages]
+        for document_page, extracted_text in zip(document.pages, extracted_texts):
+            document_page.extracted_text = extracted_text
+            all_document_pages.append((document.id, document_page))
 
     # use gpt3 to get completion
     prompt_format = line_item_extraction_prompt if context is None else line_item_extraction_w_context_prompt
-    prompts = [prompt_format.format_map({"<<DOCUMENT>>":text, "<<CONTEXT>>":context}) for text in extract_texts]
+    prompts = [prompt_format.format_map({"<<DOCUMENT_TEXT>>": document_page.extracted_text, "<<CONTEXT>>": context}) for _, document_page in all_document_pages]
 
     completions = llm_completion(prompts)
 
@@ -55,11 +66,20 @@ def parse_line_items():
             ))
         return line_items
 
-    extracted_documents = [extract_line_items(completion) for completion in completions]
+    class Response(BaseModel):
+        document_id: str
+        page: int
+        text: str
+        line_items: list[LineItem]
+
+    responses = [
+        Response(
+            document_id=document_id,
+            page=document_page.index,
+            text=document_page.extracted_text,
+            line_items=extract_line_items(completion)
+        ) for (document_id, document_page), completion in zip(all_document_pages,completions)]
 
     return jsonify([
-        [
-            json.loads(line_item.json()) for line_item in document
-        ]
-        for document in extracted_documents]), 200
-
+        json.loads(response.json()) for response in responses
+    ]), 200

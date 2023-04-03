@@ -1,7 +1,5 @@
-
-from PIL import Image
-
 import pytesseract
+from PIL import Image
 
 TESSERACT_CONFIG = r'-c load_system_dawg=0 -c load_freq_dawg=0'
 
