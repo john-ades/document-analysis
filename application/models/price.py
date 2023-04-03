@@ -1,13 +1,12 @@
 from typing import Union
 
 from iso4217 import Currency
-
 from pydantic import BaseModel
 
 
 class Price(BaseModel):
     amount: int
-    currency: Currency # uses iso4217
+    currency: Currency  # uses iso4217
 
     def __init__(self, amount: Union[float, int, str], currency_code: str):
         """
@@ -36,5 +35,5 @@ class Price(BaseModel):
 
 
 if __name__ == '__main__':
-    p = Price(amount=5.45,currency_code="USD")
+    p = Price(amount=5.45, currency_code="USD")
     print(p.json())

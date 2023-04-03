@@ -1,0 +1,12 @@
+A Document that is meant to be classified:
+
+{<<DOCUMENT_TEXT>>}
+
+-----------TEXT ENDS-----------
+Instructions:
+Classify this document using the following classes -> `{<<PREDICT_CLASSES>>}`.
+Assign a probability score between 0.0 and 1.0 for each prediction class.
+The sum of all probabilities returned must be equal to 1.0.
+
+| Class | Probability Score |
+|-------|-------------------|

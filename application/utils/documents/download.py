@@ -1,8 +1,10 @@
-from PIL import Image
-import requests
 from io import BytesIO
 
+import requests
+from PIL import Image
+
 from .accepted_types import ACCEPTED_FILE_TYPES
+
 
 def documents_download(url) -> list[Image]:
     response = requests.get(url, stream=True)
@@ -21,6 +23,6 @@ def documents_download(url) -> list[Image]:
 
     # If the URL is an image, directly load it into a Pillow Image object
     else:
-        images = Image.open(BytesIO(response.content))
+        images = [Image.open(BytesIO(response.content))]
 
     return images

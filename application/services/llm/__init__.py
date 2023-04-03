@@ -26,6 +26,8 @@ def llm_completion(prompt: Union[str, list[str]]) -> list[str]:
         Takes a text input and runs it through a large language model for a completion.
         The settings are set to parse through unstructured text data.
     """
+    if isinstance(prompt,str):
+        prompt = [prompt]
     response = openai.Completion.create(
         model=OPENAI_COMPLETION_MODEL,
         prompt=prompt,

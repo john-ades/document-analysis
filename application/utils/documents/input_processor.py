@@ -1,19 +1,18 @@
-import json
-from typing import Optional, Tuple
 from io import BytesIO
-
-from pdf2image import convert_from_bytes
+from typing import Optional, Tuple
 
 from PIL import Image
+from pdf2image import convert_from_bytes
 
-from .accepted_types import ACCEPTED_FILE_TYPES, PDF_FILE_TYPES, IMAGE_FILE_TYPES
+from .accepted_types import PDF_FILE_TYPES, IMAGE_FILE_TYPES
 from .download import documents_download
 from ..url.is_valid import is_valid_url
+from application.models.documents import Document
 
 
-def document_input_processor(request) -> Tuple[Optional[list[Image]], dict, Optional[str]]:
+def document_input_processor(request) -> Tuple[Optional[list[Document]], dict, Optional[str]]:
     if request.files:
-        images = []
+        documents: list[Document] = []
         data = {}
         for key in request.files.keys():
             file = request.files[key]
@@ -24,11 +23,15 @@ def document_input_processor(request) -> Tuple[Optional[list[Image]], dict, Opti
                 file_stream = BytesIO(file.read())
                 # Convert PDF pages to images
                 pdf_images = convert_from_bytes(file_stream.getvalue())
-                images.extend(pdf_images)
+                documents.append(
+                    Document(id=key,images=pdf_images)
+                )
             elif content_type in IMAGE_FILE_TYPES:
                 # process the image file
                 image = Image.open(file)
-                images.append(image)
+                documents.append(
+                    Document(id=key,image=image)
+                )
     elif request.is_json:
         request_data = request.get_json()
         url = request_data.get("url")
@@ -38,11 +41,14 @@ def document_input_processor(request) -> Tuple[Optional[list[Image]], dict, Opti
             return None, {}, f"The url value `{url}` is invalid"
         request_data.pop("url")
         data = dict(request_data)
-        images = [documents_download(url=url)]
+        images = documents_download(url=url)
+        documents = [
+            Document(images=images)
+        ]
     else:
         return None, {}, "No file or input data provided"
 
     if request.form:
         data.update(dict(request.form))
 
-    return images, data, None
+    return documents, data, None
